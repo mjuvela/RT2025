@@ -1,0 +1,111 @@
+from numpy import *
+from numpy.random import rand
+from matplotlib.pylab import *
+import scipy.constants as C
+
+c    =  C.c
+h    =  C.h
+k    =  C.k
+EPS  =  1.0e-6
+
+def Planck(f, T):
+    return (2.0*h*f**3/c**2)  /  ( exp(h*f/(k*T)) - 1.0 )
+
+
+def create_cloud(NX, NY, NZ):
+    # Generate density distribution for the model
+    I, J, K = indices((NX, NY, NZ), float32)
+    I -= (NX-1)/2
+    J -= (NY-1)/2
+    K -= (NZ-1)/2
+    n  = exp(-0.005*(I*I+J*J+K*K))
+    n  = 1.0e4*asarray(n, float32)
+    if (0):
+        imshow(n[NX//2,:,:])
+        show(block=True)
+        sys.exit()
+    return n
+
+
+def initialise_background_package(NX, NY, NZ):
+    # Generate photon package with random position and direction, set photons
+    u       = rand()
+    ct      = sqrt(rand())
+    st      = sqrt(1.0-ct*ct)
+    phi     = 2.0*pi*rand()
+    cp      = cos(phi)
+    sp      = sin(phi)
+    ###
+    if (u<1/6):   #  side X=0
+        x, y, z =  EPS,       NY*rand(), NZ*rand()
+        u, v, w =  ct,        st*cp,     st*sp
+    elif (u<2/6): # side X=NX
+        x, y, z =  NX-EPS,    NY*rand(), NZ*rand()
+        u, v, w = -ct,        st*cp,     st*sp
+    elif (u<3/6): # side Y=0
+        x, y, z =  NX*rand(), EPS,       NZ*rand()
+        u, v, w =  st*cp,     ct,        st*sp
+    elif (u<4/6): # side Y=NY
+        x, y, z =  NX*rand(), NY-EPS,    NZ*rand()
+        u, v, w =  st*cp,     -ct,       st*sp
+    elif (u<5/6): # side Z=0
+        x, y, z =  NX*rand(), NY*rand(), EPS
+        u, v, w =  st*cp,     st*sp,     ct
+    else:         # side Z=NZ
+        x, y, z =  NX*rand(), NY*rand(), NX-EPS
+        u, v, w =  st*cp,     st*sp,     -ct
+
+    return x, y, z, u, v, w
+
+
+
+def get_step_length(x, y, z,  u, v, w):
+    # take step to next cell boundary, return the distance without updating (x,y,z)
+    if (u>0.0):
+        dx  =  (1.0+EPS-fmod(x, 1.0)) / u
+    else:
+        dx  =     -(EPS+fmod(x, 1.0)) / u
+    if (v>0.0):
+        dy  =  (1.0+EPS-fmod(y, 1.0)) / v
+    else:
+        dy  =     -(EPS+fmod(y, 1.0)) / v
+    if (w>0.0):
+        dz  =  (1.0+EPS-fmod(z, 1.0)) / w
+    else:
+        dz  =     -(EPS+fmod(z, 1.0)) / w
+    return min([dx, dy, dz])
+
+
+
+def get_cell_indices(x, y, z, NX, NY, NZ):
+    # Return integer cell indices for position (x, y, z)
+    if ((x<=0.0)|(x>=NX)): return -1, -1, -1
+    if ((y<=0.0)|(y>=NY)): return -1, -1, -1
+    if ((z<=0.0)|(z>=NZ)): return -1, -1, -1
+    return  int(floor(x)), int(floor(y)), int(floor(z))
+
+
+
+def read_dust_file(name):
+    # Read dust optical properties from text file
+    lines = open(name).readlines()
+    A     = float(lines[1].split()[0])
+    B     = float(lines[2].split()[0])
+    d     = loadtxt(name, skiprows=4)
+    freq  = d[:,0]
+    g     = d[:,1]
+    Kabs  = A*pi*B**2*d[:,2]
+    Ksca  = A*pi*B**2*d[:,3]
+    return freq, g, Kabs, Ksca
+
+
+
+def isotropic_scattering(u, v, w):
+    # just random direction uniformly over 4 pi solid angle
+    cos_theta =  -1.0+2.0*rand()
+    sin_theta =  sqrt(1.0-cos_theta**2)
+    phi       =  2.0*pi*rand()
+    u         =  sin_theta*cos(phi)
+    v         =  sin_theta*sin(phi)
+    w         =  cos_theta
+    return u, v, w
