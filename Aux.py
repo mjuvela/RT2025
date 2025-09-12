@@ -109,3 +109,58 @@ def isotropic_scattering(u, v, w):
     v         =  sin_theta*sin(phi)
     w         =  cos_theta
     return u, v, w
+
+
+def HG_scattering(u, v, w, g):
+    cos_theta =  (1.0+g*g-((1-g*g)/(1-g+2*h*rand()))**2) / (2.0*g)
+    phi       =  2.0*pi*rand()
+    # new vector in coordinate system where +Z is current direction of propagation
+    sin_theta =  sqrt(1.0-cos_theta**2)
+    uu  =  sin_theta*cos(phi)
+    vv  =  sin_theta*sin(phi)
+    ww  =  cos_theta
+    # rotate current +Z to the direction (u,v,w)
+    theta     =  arccos(uu*u+vv*v+ww*w)   # dot product = a * b * cos(angle)
+    phi       =  arctan2(u, v)
+    # rotate angle theta around y, then angle phi around z
+    tmp = asarray([uu, vv, ww], flot32)
+    R1  = asarray([ [cos(theta),  0,  sin(theta)],
+                    [0,           1,  0         ],
+                    [-sin(theta), 0, cos(theta) ]])
+    R2  = asarray([ [cos(phi),  sin(phi),  0],
+                    [-sin(phi), cos(phi),  0],
+                    [0,         0,         1]])
+    tmp =  matmul(R2, matmul(r1, tmp))
+    return tmp[0], tmp[1], tmp[2]
+
+
+
+def get_integration_weights(freq):
+    """
+    Return integration weights for trapezoidal integration over frequency axis,
+    given the frequency grid freq.
+    """
+    N       =  len(freq)
+    weights =  zeros(N, float32)
+    for i in range(N):   #  loop over intervals
+        if (i>0):        #  integral +=  0.5*(y[i]+y[i-1])*(x[i]-x[i-1])
+            weights[i] += 0.5*(freq[i]-freq[i-1])
+        if (i<(N-1)):    #  integral +=  0.5*(y[i]+y[i+1])*(x[i+1]-x[i])
+            weights[i] += 0.5*(freq[i+1]-freq[i])
+    return weights
+    
+
+
+def test_integration_weights():
+    """
+    Integrate y=x**2 over x=[0.5, 4.0]
+    Y = x**3/3,  integral  (4.0**3-(0.5)**3)/3 = 21.291666667
+    """
+    I0 = 21.291666667
+    for N in [ 4, 10, 100]:   # try different number of points
+        x   =  logspace(log10(0.5), log10(4.0), N)
+        w   =  get_integration_weights(x)
+        I   =  sum(w*(x**2.0))
+        print("points  %3d,  estimate %10.4e,  error %.3f per cent\n"
+              % (N, I,  100.0*(I-I0)/I0))
+        
