@@ -3,10 +3,12 @@ from numpy.random import rand
 from matplotlib.pylab import *
 import scipy.constants as C
 
-c    =  C.c
-h    =  C.h
-k    =  C.k
-EPS  =  1.0e-6
+c    =  C.c             # speed of light
+h    =  C.h             # Planck constant
+k    =  C.k             # Boltzmann constant
+EPS  =  1.0e-6          # epsilon
+PC   =  3.0856775e+16   # parsec
+
 
 def Planck(f, T):
     return (2.0*h*f**3/c**2)  /  ( exp(h*f/(k*T)) - 1.0 )
@@ -14,12 +16,13 @@ def Planck(f, T):
 
 def create_cloud(NX, NY, NZ):
     # Generate density distribution for the model
+    # Peak density 1e4 cm-3  =  1e10 m-3
     I, J, K = indices((NX, NY, NZ), float32)
     I -= (NX-1)/2
     J -= (NY-1)/2
     K -= (NZ-1)/2
     n  = exp(-0.005*(I*I+J*J+K*K))
-    n  = 1.0e4*asarray(n, float32)
+    n  = 1.0e10*asarray(n, float32)
     if (0):
         imshow(n[NX//2,:,:])
         show(block=True)
@@ -88,14 +91,14 @@ def get_cell_indices(x, y, z, NX, NY, NZ):
 
 def read_dust_file(name):
     # Read dust optical properties from text file
-    lines = open(name).readlines()
-    A     = float(lines[1].split()[0])
-    B     = float(lines[2].split()[0])
-    d     = loadtxt(name, skiprows=4)
-    freq  = d[:,0]
-    g     = d[:,1]
-    Kabs  = A*pi*B**2*d[:,2]
-    Ksca  = A*pi*B**2*d[:,3]
+    lines  =  open(name).readlines()
+    A      =  float(lines[1].split()[0])       # dust-to-gas number ratio
+    B      =  float(lines[2].split()[0])*0.01  # grain size [m]
+    d      =  loadtxt(name, skiprows=4)
+    freq   =  d[:,0]
+    g      =  d[:,1]
+    Kabs   =  A * pi*B**2 * d[:,2]  # cross section per H-atom [m2/H]
+    Ksca   =  A * pi*B**2 * d[:,3]  # cross section per H-atom [m2/H]
     return freq, g, Kabs, Ksca
 
 
@@ -111,27 +114,27 @@ def isotropic_scattering(u, v, w):
     return u, v, w
 
 
-def HG_scattering(u, v, w, g):
-    cos_theta =  (1.0+g*g-((1-g*g)/(1-g+2*h*rand()))**2) / (2.0*g)
-    phi       =  2.0*pi*rand()
-    # new vector in coordinate system where +Z is current direction of propagation
-    sin_theta =  sqrt(1.0-cos_theta**2)
-    uu  =  sin_theta*cos(phi)
-    vv  =  sin_theta*sin(phi)
-    ww  =  cos_theta
-    # rotate current +Z to the direction (u,v,w)
-    theta     =  arccos(uu*u+vv*v+ww*w)   # dot product = a * b * cos(angle)
-    phi       =  arctan2(u, v)
-    # rotate angle theta around y, then angle phi around z
-    tmp = asarray([uu, vv, ww], flot32)
-    R1  = asarray([ [cos(theta),  0,  sin(theta)],
-                    [0,           1,  0         ],
-                    [-sin(theta), 0, cos(theta) ]])
-    R2  = asarray([ [cos(phi),  sin(phi),  0],
-                    [-sin(phi), cos(phi),  0],
-                    [0,         0,         1]])
-    tmp =  matmul(R2, matmul(r1, tmp))
-    return tmp[0], tmp[1], tmp[2]
+# def HG_scattering(u, v, w, g):
+#     cos_theta =  (1.0+g*g-((1-g*g)/(1-g+2*h*rand()))**2) / (2.0*g)
+#     phi       =  2.0*pi*rand()
+#     # new vector in coordinate system where +Z is current direction of propagation
+#     sin_theta =  sqrt(1.0-cos_theta**2)
+#     uu  =  sin_theta*cos(phi)
+#     vv  =  sin_theta*sin(phi)
+#     ww  =  cos_theta
+#     # rotate current +Z to the direction (u,v,w)
+#     theta     =  arccos(uu*u+vv*v+ww*w)   # dot product = a * b * cos(angle)
+#     phi       =  arctan2(u, v)
+#     # rotate angle theta around y, then angle phi around z
+#     tmp = asarray([uu, vv, ww], flot32)
+#     R1  = asarray([ [cos(theta),  0,  sin(theta)],
+#                     [0,           1,  0         ],
+#                     [-sin(theta), 0, cos(theta) ]])
+#     R2  = asarray([ [cos(phi),  sin(phi),  0],
+#                     [-sin(phi), cos(phi),  0],
+#                     [0,         0,         1]])
+#     tmp =  matmul(R2, matmul(r1, tmp))
+#     return tmp[0], tmp[1], tmp[2]
 
 
 
