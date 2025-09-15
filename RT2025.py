@@ -39,6 +39,7 @@ if (0):
         POS[i,:] = [x,y,z]
         DIR[i,:] = [u,v,w]
 
+    figure(1, figsize=(10,6))
     subplot(231)
     plot(POS[:,0], POS[:,1], 'r.')
     subplot(232)
@@ -92,14 +93,15 @@ if (0):
             draw()
             pause(0.02)
     show(block=True)
-    
+    sys.exit()
 
 
 
-if (0):
+if (1):
     # Simulation of a single frequency, store and plot the absorbed energy
+    NPP = 40000
     ABS = zeros((NX, NY, NZ), float32)  # array for absorbed energy
-    
+    t0  = time.time()
     for ipacket in range(NPP):
         if (ipacket%1000==0):
             print("packet  %6d  --- %5.2f per cent" % (ipacket, 100.0*ipacket/NPP))
@@ -115,7 +117,8 @@ if (0):
             y            +=  s*v
             z            +=  s*w
             i, j, k       =  get_cell_indices(x, y, z, NX, NY, NZ) # index update
-
+    print("Run time %.2f seconds" % (time.time()-t0))
+    
     # show cross section of the absorbed energy
     close(1)
     figure(1, figsize=(13, 3.5))
@@ -127,16 +130,16 @@ if (0):
         text(0.08, 0.08, 'x=%d' % ix, transform=ax.transAxes, size=16, backgroundcolor='w')
         colorbar()
     show(block=True)
-
+    sys.exit()
     
 
 
-if (1):
+if (0):
     # Simulation of a single frequency, store and plot the absorbed energy
     # Include isotropic scattering
     if (0): n *= 100.0
-
     ABS = zeros((NX, NY, NZ), float32)  # array for absorbed energy
+    t0  = time.time()
     for pp in range(NPP):
         if (pp%1000==0): print("pp  %6d --- %5.2f per cent" % (pp, 100.0*pp/NPP))
         x, y, z, u, v, w  =  initialise_background_package(NX, NY, NZ)
@@ -163,7 +166,7 @@ if (1):
             y         +=  s*v
             z         +=  s*w
             i, j, k    =  get_cell_indices(x, y, z, NX, NY, NZ) # index update
-
+    print("Run time %.2f seconds" % (time.time()-t0))
     # convert absorbed photons to absorbed energy per cell (and per 1 Hz)
     # normalised by density
     ABS *=  h*f / n
@@ -184,17 +187,19 @@ if (1):
         text(0.08, 0.08, 'x=%d' % ix, transform=ax.transAxes, size=16, backgroundcolor='w')
         colorbar()
     show(block=True)
-
+    sys.exit()
     
     
 
+    
 if (0):
     # Simulation several frequencies, calculate integrated energy and save to file
     SUMABS  =  zeros((NX, NY, NZ), float32)  # total absorbed energy
     ABS     =  zeros((NX, NY, NZ), float32)  # absorbed photons per 1 Hz band
     weights =  get_integration_weights(freq)
 
-    NPP = 1000
+    NPP     =  1000
+    t0      =  time.time()
     for ifreq in range(NF):
         print("Frequency %3d / %3d" % (ifreq+1, NF))
         f          =  freq[ifreq]        
@@ -235,12 +240,14 @@ if (0):
 
         ABS    *=  h*freq[ifreq]   # from photon number to absorbed energy per Hz
         SUMABS +=  weights[ifreq] * ABS   # integral of absorbed energy
+    print("Run time %.2f seconds" % (time.time()-t0))
 
     # Absorptions were the true energy per cell, divided by GL^3  ==  per unit volume
     # Divide also by H number density, to save the absorbed energy per Hydrogen atom
     SUMABS /= n
     SUMABS.tofile("absorbed.data")
-        
+    sys.exit()
+
     
 
 if (0):
@@ -269,6 +276,6 @@ if (0):
     imshow(Tdust[16,:,:])
     colorbar(label=r'$T_{\rm dust} \/ \/ \rm [K]$')
     show(block=True)
-
+    sys.exit()
     
     

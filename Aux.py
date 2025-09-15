@@ -31,7 +31,7 @@ def create_cloud(NX, NY, NZ):
 
 
 def initialise_background_package(NX, NY, NZ):
-    # Generate photon package with random position and direction, set photons
+    # Generate photon package with random position and direction
     u       = rand()
     ct      = sqrt(rand())
     st      = sqrt(1.0-ct*ct)
@@ -59,6 +59,66 @@ def initialise_background_package(NX, NY, NZ):
         u, v, w =  st*cp,     st*sp,     -ct
 
     return x, y, z, u, v, w
+
+
+
+
+def initialise_background_package_2(NX, NY, NZ, pp):
+    # Generate photon package, systematic selection of surface element,
+    # random position on the element
+    # ... 
+    u       =  rand()
+    ct      =  sqrt(rand())       # cos(theta), theta wrt surface normal
+    st      =  sqrt(1.0-ct*ct)    # sin(theta)
+    phi     =  2.0*pi*rand()      # phi rotation around the normal
+    cp      =  cos(phi)
+    sp      =  sin(phi)
+    ###
+    AREA    =  2*(NY*NZ+NX*NZ+NX*NY)  # number of surface elements
+    k       =  pp % AREA              # index of the surface element
+    # print("%6d  %6d" % (pp, k))
+    if (k<(NY*NZ)):                     #  side X=0
+        iy      =  k  % NY
+        iz      =  k // NY
+        x, y, z =  EPS,       iy+rand(), iz+rand()
+        u, v, w =  ct,        st*cp,     st*sp
+    else:
+        k  -=  NY*NZ
+        if (k<(NY*NZ)):                 #  side X=NX
+            iy      =  k  % NY
+            iz      =  k // NY
+            x, y, z =  NX-EPS,    iy+rand(), iz+rand()
+            u, v, w = -ct,        st*cp,     st*sp
+        else:
+            k -= NY*NZ
+            if (k<NX*NZ):               #  side Y=0
+                ix      =  k  % NX
+                iz      =  k // NX
+                x, y, z =  ix+rand(), EPS,       iz+rand()
+                u, v, w =  st*cp,     ct,        st*sp
+            else:
+                k -= NX*NZ
+                if (k<(NX*NZ)):         #  side Y=NY
+                    ix      =  k  % NX
+                    iz      =  k // NX
+                    x, y, z =  ix+rand(), NY-EPS,    iz+rand()
+                    u, v, w =  st*cp,     -ct,       st*sp
+                else:
+                    k -= NX*NZ
+                    if (k<NX*NY):       #  side Z=0
+                        ix      =  k  % NX
+                        iy      =  k // NX
+                        x, y, z =  ix+rand(), iy+rand(), EPS
+                        u, v, w =  st*cp,     st*sp,     ct
+                    else:               #  side Z=NZ
+                        k      -=  NX*NY
+                        ix      =  k  % NX
+                        iy      =  k // NX
+                        x, y, z =  ix+rand(), iy+rand(), NZ-EPS
+                        u, v, w =  st*cp,     st*sp,     -ct
+
+    return x, y, z, u, v, w, 1.0
+
 
 
 
