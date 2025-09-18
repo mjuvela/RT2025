@@ -5,15 +5,15 @@ import scipy.constants as C
 from scipy.interpolate import interp1d
 
 # Define constants
-c    =  C.c             # speed of light
-h    =  C.h             # Planck constant
-k    =  C.k             # Boltzmann constant
-EPS  =  1.0e-6          # epsilon
-PC   =  3.0856775e+16   # parsec
+c0    =  C.c             # speed of light
+h0    =  C.h             # Planck constant
+k0    =  C.k             # Boltzmann constant
+EPS   =  1.0e-6          # epsilon
+PC    =  3.0856775e+16   # parsec
 
 # 
 def Planck(f, T):
-    return (2.0*h*f**3/c**2)  /  ( exp(h*f/(k*T)) - 1.0 )
+    return (2.0*h0*f**3/c0**2)  /  ( exp(h0*f/(k0*T)) - 1.0 )
 
 
 def create_cloud(NX, NY, NZ):
@@ -217,13 +217,13 @@ Kabs  = Kabs0 * GL
 Ksca  = Ksca0 * GL
     
 # Select one frequency (the one closest to V band) for single-frequency runs
-ifreq =  argmin(abs(freq-c/0.55e-6))
+ifreq =  argmin(abs(freq-c0/0.55e-6))
 f     =  freq[ifreq]
 
 # Calculate number of photons entering the model in one second, divide by NPP
 #   => number of photons per single photon package
 Ibg     =  1.0e-13*Planck(f, 10000.0)  # diluted T=10000K black body as background
-phot_bg =  (Ibg*pi*2*(NX*NY+NX*NZ+NY*NZ)*GL*GL) / (h*f) / NPP
+phot_bg =  (Ibg*pi*2*(NX*NY+NX*NZ+NY*NZ)*GL*GL) / (h0*f) / NPP
 
 
 if (0):
@@ -373,7 +373,7 @@ def simulate_single_frequency_2():
                 
     # convert absorbed photons to absorbed energy per cell (and per 1 Hz)
     # normalised by density
-    ABS *=  h*f / n
+    ABS *=  h0*f / n
 
     print("--------------------------------------------------------------------------------")
     print("Optical depth %.3e" % (NX*Kabs[ifreq]*mean(ravel(n))))
@@ -406,16 +406,16 @@ def simulate_all_frequencies():
     NPP     =  1000
     t0      =  time.time()
     for ifreq in range(NF):
-        print("Frequency %3d / %3d" % (ifreq+1, NF))
+        if (ifreq%5==0): print("Frequency %3d / %3d" % (ifreq+1, NF))
         f          =  freq[ifreq]        
         Ibg        =  1.0e-13*Planck(f, 10000.0)  # diluted T=10000K black body as background
         if (0):  # Photons per photon package
-            phot_bg    =  (Ibg*pi*2*(NX*NY+NX*NZ+NY*NZ)*GL*GL) / (h*f) / NPP
+            phot_bg    =  (Ibg*pi*2*(NX*NY+NX*NZ+NY*NZ)*GL*GL) / (h0*f) / NPP
         else:     # Use *normalised* photon numbers: true photons / GL^3
-            phot_bg    =  (Ibg*pi*2*(NX*NY+NX*NZ+NY*NZ)) / (h*f*GL) / NPP
+            phot_bg    =  (Ibg*pi*2*(NX*NY+NX*NZ+NY*NZ)) / (h0*f*GL) / NPP
         ABS[:,:,:] =  0.0        
         for pp in range(NPP):
-            if (pp%1000==0): print("     pp %6d -- %5.2f per cent" % (pp, 100.0*pp/NPP))
+            # if (pp%1000==0): print("     pp %6d -- %5.2f per cent" % (pp, 100.0*pp/NPP))
             x, y, z, u, v, w  =  initialise_background_package(NX, NY, NZ)
             photons           =  phot_bg
             i, j, k           =  get_cell_indices(x, y, z, NX, NY, NZ)
@@ -440,7 +440,7 @@ def simulate_all_frequencies():
                 y         +=  s*v
                 z         +=  s*w
                 i, j, k    =  get_cell_indices(x, y, z, NX, NY, NZ) # index update
-        ABS    *=  h*freq[ifreq]   # from photon number to absorbed energy per Hz
+        ABS    *=  h0*freq[ifreq]   # from photon number to absorbed energy per Hz
         SUMABS +=  weights[ifreq] * ABS   # integral of absorbed energy
     print("Run time %.2f seconds" % (time.time()-t0))
 
@@ -479,8 +479,8 @@ def simulate_all_frequencies():
     
 
 
-# simulate_single_frequency()
+simulate_single_frequency()
 # simulate_single_frequency_2()
-simulate_all_frequencies()
+# simulate_all_frequencies()
 
     
